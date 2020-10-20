@@ -14,7 +14,7 @@ namespace wsrs
             excelApp.Visible = false;
 
             // 開啟驗證結果Excel表
-            Excel.Workbook excelBook = excelApp.Workbooks.Open("D:\\vsprojects\\wsrs\\TemplateFiles\\sample.xlsx");
+            Excel.Workbook excelBook = excelApp.Workbooks.Open("D:\\TemplateFiles\\sample.xlsx");
 
             // 設定CaseInfo
             Excel.Worksheet caseInfoSheet = excelBook.Worksheets["caseinfo"];
