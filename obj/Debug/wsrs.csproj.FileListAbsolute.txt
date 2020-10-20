@@ -5,3 +5,10 @@ D:\VS\wsrs\obj\Debug\wsrs.csprojAssemblyReference.cache
 D:\VS\wsrs\obj\Debug\wsrs.csproj.CoreCompileInputs.cache
 D:\VS\wsrs\obj\Debug\wsrs.exe
 D:\VS\wsrs\obj\Debug\wsrs.pdb
+D:\vsprojects\wsrs\bin\Debug\wsrs.exe.config
+D:\vsprojects\wsrs\bin\Debug\wsrs.exe
+D:\vsprojects\wsrs\bin\Debug\wsrs.pdb
+D:\vsprojects\wsrs\obj\Debug\wsrs.csprojAssemblyReference.cache
+D:\vsprojects\wsrs\obj\Debug\wsrs.csproj.CoreCompileInputs.cache
+D:\vsprojects\wsrs\obj\Debug\wsrs.exe
+D:\vsprojects\wsrs\obj\Debug\wsrs.pdb

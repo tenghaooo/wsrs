@@ -13,10 +13,10 @@ namespace wsrs
             var excelApp = new Excel.Application();
             excelApp.Visible = false;
 
-            // 開啟驗證結果Excel表
+            // open result excel table
             Excel.Workbook excelBook = excelApp.Workbooks.Open("D:\\TemplateFiles\\sample.xlsx");
 
-            // 設定CaseInfo
+            // set case info
             Excel.Worksheet caseInfoSheet = excelBook.Worksheets["caseinfo"];
             CaseInfo caseinfo = new CaseInfo();
             caseinfo = getCaseInfo(caseInfoSheet);
