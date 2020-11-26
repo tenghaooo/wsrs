@@ -9,8 +9,8 @@ namespace wsrs
 {
     class Unit
     {
-        public string name;
-        public ArrayList sites;
+        public string name { get; set; }
+        public ArrayList sites { get; set; }
 
         public Unit()
         {

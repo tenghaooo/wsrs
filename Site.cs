@@ -9,9 +9,9 @@ namespace wsrs
 {
     class Site
     {
-        public string url;
-        public string name;
-        public ArrayList vulns;
+        public string url { get; set; } 
+        public string name { get; set; }
+        public ArrayList vulns { get; set; }
 
         public Site() {
             vulns = new ArrayList();
