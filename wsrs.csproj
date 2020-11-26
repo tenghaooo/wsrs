@@ -49,6 +49,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Unit.cs" />
+    <Compile Include="Site.cs" />
+    <Compile Include="Vuln.cs" />
     <Compile Include="CaseInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
