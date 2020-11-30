@@ -10,14 +10,14 @@ namespace wsrs
     class Unit
     {
         public string name { get; set; }
-        public ArrayList sites { get; set; }
+        public List<Site> sites { get; set; }
 
         public Unit()
         {
-            sites = new ArrayList();
+            sites = new List<Site>();
         }
 
-        public Unit(string name, ArrayList sites)
+        public Unit(string name, List<Site> sites)
         {
             this.name = name;
             this.sites = sites;
