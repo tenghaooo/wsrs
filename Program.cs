@@ -10,6 +10,21 @@ namespace wsrs
     {
        static void Main(string[] args)
         {
+
+            // print banner
+            Console.WriteLine(@" ___       __   ________  ________  ________       ");
+            Console.WriteLine(@"|\  \     |\  \|\   ____\|\   __  \|\   ____\      ");
+            Console.WriteLine(@"\ \  \    \ \  \ \  \___|\ \  \|\  \ \  \___|_     ");
+            Console.WriteLine(@" \ \  \  __\ \  \ \_____  \ \   _  _\ \_____  \    ");
+            Console.WriteLine(@"  \ \  \|\__\_\  \|____|\  \ \  \\  \\|____|\  \   ");
+            Console.WriteLine(@"   \ \____________\____\_\  \ \__\\ _\ ____\_\  \  ");
+            Console.WriteLine(@"    \|____________|\_________\|__|\|__|\_________\ ");
+            Console.WriteLine(@"                  \|_________|        \|_________| ");
+            Console.WriteLine(@"                                                   ");
+            Console.WriteLine(@"                                                   ");
+            Console.WriteLine(@"                   v0.1 by tenghaooo               ");
+            Console.WriteLine(@"                                                   ");
+            Console.WriteLine(@"===================================================");
             Console.WriteLine("[L] Start running...");
 
             var excelApp = new Excel.Application();
@@ -135,7 +150,7 @@ namespace wsrs
             /*
              * Big Loop For Units, Create Unit Report
              * */
-
+            
             for (int U = 0; U < Units.Count; U++)
             {
 
@@ -144,8 +159,8 @@ namespace wsrs
                 Word.Document report = wordApp.Documents.Open("D:\\TemplateFiles\\sample.docx");
                 string reportPath = "D:\\Reports\\";
                 string reportName = "H07" + caseinfo.reportCode + "_" + caseinfo.period + "." + caseinfo.userName + caseinfo.reportName + "-" + Units[U].name + "_" + caseinfo.period + ".docx";
-
-                Console.WriteLine("    Writting case info to report");
+            
+                Console.WriteLine("        Writting case info to report");
                 // write caseinfo to report
                 report.Content.Find.Execute("p_userName", false, false, false, false, false, true, 1, false, caseinfo.userName, 2, false, false, false, false);
                 report.Content.Find.Execute("p_projectName", false, false, false, false, false, true, 1, false, caseinfo.projectName, 2, false, false, false, false);
@@ -158,7 +173,7 @@ namespace wsrs
                 report.Content.Find.Execute("p_endDate", false, false, false, false, false, true, 1, false, caseinfo.endDate, 2, false, false, false, false);
                 report.Content.Find.Execute("p_tool", false, false, false, false, false, true, 1, false, caseinfo.tool, 2, false, false, false, false);
 
-                Console.WriteLine("    Writting case info to header");
+                Console.WriteLine("        Writting case info to header");
                 // write caseinfo to header
                 foreach (Word.Section section in report.Sections)
                 {
@@ -168,18 +183,76 @@ namespace wsrs
                     headerRange.Find.Execute("p_reportName", false, false, false, false, false, true, 1, false, caseinfo.reportName, 2, false, false, false, false);
                     headerRange.Find.Execute("p_period", false, false, false, false, false, true, 1, false, caseinfo.period, 2, false, false, false, false);
                 }
-
+            
+                Console.WriteLine("        Writting table 1");
                 // write table one
+                Word.Table tableOne = report.Tables[3];
+                int indexOfSites = 0;
+                int row = 3;
+                do
+                {
+                    if (indexOfSites > 0)
+                    {
+                        tableOne.Rows.Add();
+                        row++;
+                    }
+                    tableOne.Cell(row, 1).Range.Text = (indexOfSites + 1).ToString();
+                    tableOne.Cell(row, 2).Range.Text = Units[U].sites[indexOfSites].url;
+                    tableOne.Cell(row, 3).Range.Text = Units[U].sites[indexOfSites].name;
+                    tableOne.Cell(row, 4).Range.Text = Units[U].sites[indexOfSites].numOfVulns["Critical"].ToString();
+                    tableOne.Cell(row, 5).Range.Text = Units[U].sites[indexOfSites].numOfVulns["High"].ToString();
+                    tableOne.Cell(row, 6).Range.Text = Units[U].sites[indexOfSites].numOfVulns["Medium"].ToString();
+                    tableOne.Cell(row, 7).Range.Text = Units[U].sites[indexOfSites].numOfVulns["Low"].ToString();
+
+                    indexOfSites++;
+                } while (indexOfSites < Units[U].sites.Count);
+
+                // merge cells
+                tableOne.Cell(1, 1).Merge(tableOne.Cell(2, 1));
+                tableOne.Cell(1, 2).Merge(tableOne.Cell(2, 2));
+                tableOne.Cell(1, 3).Merge(tableOne.Cell(2, 3));
+
+                tableOne.Cell(1, 1).Range.Text = "序號";
+                tableOne.Cell(1, 2).Range.Text = "URL/IP";
+                tableOne.Cell(1, 3).Range.Text = "網站名稱";
+
+                // delete columns according to verify level and merge
+                if (caseinfo.level == "Critical" || caseinfo.level == "critical")
+                {
+                    tableOne.Columns[7].Delete();
+                    tableOne.Columns[6].Delete();
+                    tableOne.Columns[5].Delete();
+                }
+                else if (caseinfo.level == "High" || caseinfo.level == "high")
+                {
+                    tableOne.Columns[7].Delete();
+                    tableOne.Columns[6].Delete();
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                }
+                else if (caseinfo.level == "Medium" || caseinfo.level == "medium")
+                {
+                    tableOne.Columns[7].Delete();
+                    tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                }
+                else if (caseinfo.level == "Low" || caseinfo.level == "low")
+                {
+                    tableOne.Cell(1, 6).Merge(tableOne.Cell(1, 7));
+                    tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                }
+                tableOne.Cell(1, 4).Range.Text = "弱點數量";
 
 
-                Console.WriteLine("    Saving report");
+
+                // save report
+                Console.WriteLine("        Saving report");
                 report.SaveAs2(reportPath + reportName);
                 report.Close();
-
-                Console.WriteLine("    Done");
+            
+                Console.WriteLine("        Done");
             }
-           
-
+            
             excelBook.Close();
             excelApp.Quit();
             
