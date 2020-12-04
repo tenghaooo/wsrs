@@ -20,12 +20,17 @@ namespace wsrs
 
             List<Unit> Units = new List<Unit>();
             CaseInfo caseinfo = new CaseInfo();
+            string resultExcel = @"D:\TemplateFiles\sample.xlsx";
 
             Console.WriteLine("[L] Start running...");
 
+            Console.Write("[I] Please input result excel path: ");
+
+            resultExcel = Console.ReadLine();
+
             // open result excel table
             Console.WriteLine("[L] Openning result excel");
-            Excel.Workbook excelBook = excelApp.Workbooks.Open("D:\\TemplateFiles\\sample.xlsx");
+            Excel.Workbook excelBook = excelApp.Workbooks.Open(resultExcel);
             
             // setup units and sites
             Console.WriteLine("[L] Loading units and sites");
@@ -37,10 +42,11 @@ namespace wsrs
             Excel.Worksheet resultSheet = excelBook.Worksheets["result"];
             setVulns(resultSheet, ref Units);
 
-            // set case info
+            // setup caseinfo
             Console.WriteLine("[L] Loading case info");
             Excel.Worksheet caseInfoSheet = excelBook.Worksheets["caseinfo"];
             setCaseInfo(caseInfoSheet, ref caseinfo);
+
 
             /*
              * Big Loop For Units, Create Unit Report
@@ -49,24 +55,59 @@ namespace wsrs
             for (int U = 0; U < Units.Count; U++)
             {
                 Console.WriteLine("[L] Creating report " + (U + 1).ToString() + "/" + Units.Count.ToString());
+
+                int vulnNum = getVulnNumOfUnit(Units[U]);
+                bool haveVuln = (vulnNum == 0) ? false : true;
+                Word.Document report;
+
                 // open report template
-                Word.Document report = wordApp.Documents.Open("D:\\TemplateFiles\\sample.docx");
+                if (!haveVuln)
+                    report = wordApp.Documents.Open(@"D:\TemplateFiles\no_vuln_sample.docx");
+                else
+                    report = wordApp.Documents.Open(@"D:\TemplateFiles\sample.docx");
+
                 string reportPath = "D:\\Reports\\";
                 string reportName = "H07" + caseinfo.reportCode + "_" + caseinfo.period + "." + caseinfo.userName + caseinfo.reportName + "_" + caseinfo.period + ".docx"; ;
                 if (Units[U].name != "000")
                     reportName = "H07" + caseinfo.reportCode + "_" + caseinfo.period + "." + caseinfo.userName + caseinfo.reportName + "-" + Units[U].name + "_" + caseinfo.period + ".docx";
-               
-                // write caseinfo to report and header
-                Console.WriteLine("        Writting caseinfo to report & header");
-                writeCaseInfoToReport(ref report, caseinfo, Units[U]);
 
-                // write table one
-                Console.WriteLine("        Writting table 1");
-                writeTableOneToReport(ref report, caseinfo, Units[U]);
+
+                if (haveVuln)
+                {
+                    // write report create date
+                    Console.WriteLine("        Writting create date");
+                    writeCreateDateToReport(ref report);
+
+                    // write caseinfo to report and header
+                    Console.WriteLine("        Writting caseinfo to report & header");
+                    writeCaseInfoToReport(ref report, caseinfo, Units[U]);
+
+                    // write table one
+                    Console.WriteLine("        Writting table 1");
+                    writeTableOneToReport(ref report, caseinfo, Units[U]);
+
+                    // write table two
+                    Console.WriteLine("        Writting table 2");
+                    writeTableTwoToReport(ref report, caseinfo, Units[U]);
+                }
+                else if (!haveVuln)
+                {
+                    // write report create date
+                    Console.WriteLine("        Writting create date");
+                    writeCreateDateToReport(ref report);
+
+                    // write caseinfo to report and header
+                    Console.WriteLine("        Writting caseinfo to report & header");
+                    writeCaseInfoToReport(ref report, caseinfo, Units[U]);
+
+                    // write table one
+                    Console.WriteLine("        Writting table 1");
+                    writeTableOneToReport(ref report, caseinfo, Units[U]);
+
+                    Console.WriteLine("        This is a 0 vulns report");
+
+                }
                 
-                // write table two
-                Console.WriteLine("        Writting table 2");
-                writeTableTwoToReport(ref report, caseinfo, Units[U]);
 
                 // save report
                 Console.WriteLine("        Saving report");
@@ -83,6 +124,30 @@ namespace wsrs
 
             Console.WriteLine("[L] Finish!!!");
             Console.ReadLine();
+        }
+
+        static int getVulnNumOfUnit(Unit unit)
+        {
+            int vulnNum = 0;
+
+            for (int i = 0; i < unit.sites.Count; i++)
+            {
+                vulnNum += unit.sites[i].vulns.Count;
+            }
+
+            return vulnNum;
+        }
+
+        static void writeCreateDateToReport(ref Word.Document report)
+        {
+            String sDate = DateTime.Now.ToString();
+            DateTime datevalue = (Convert.ToDateTime(sDate.ToString()));
+            String yy = (datevalue.Year - 1911).ToString();
+            String mn = datevalue.Month.ToString();
+            String dy = datevalue.Day.ToString();
+            report.Content.Find.Execute("p_rYear", false, false, false, false, false, true, 1, false, yy, 2, false, false, false, false);
+            report.Content.Find.Execute("p_rMonth", false, false, false, false, false, true, 1, false, mn, 2, false, false, false, false);
+            report.Content.Find.Execute("p_rDay", false, false, false, false, false, true, 1, false, dy, 2, false, false, false, false);
         }
 
         static void writeTableTwoToReport(ref Word.Document report, CaseInfo caseinfo, Unit unit)
@@ -103,6 +168,7 @@ namespace wsrs
                 }
             }
             tableTwo.Rows.Last.Delete();
+            
         }
 
         static void writeTableOneToReport(ref Word.Document report, CaseInfo caseinfo, Unit unit)
@@ -143,26 +209,55 @@ namespace wsrs
                 tableOne.Columns[7].Delete();
                 tableOne.Columns[6].Delete();
                 tableOne.Columns[5].Delete();
+                tableOne.Columns[4].Width = 60;
             }
             else if (caseinfo.level == "High" || caseinfo.level == "high")
             {
                 tableOne.Columns[7].Delete();
                 tableOne.Columns[6].Delete();
-                tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                if (caseinfo.tool == "WebInspect" || caseinfo.tool == "Webinspect" || caseinfo.tool == "webinspect")
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                else
+                {
+                    tableOne.Columns[4].Delete();
+                    tableOne.Columns[4].Width = 60;
+                }
+                    
+                
             }
             else if (caseinfo.level == "Medium" || caseinfo.level == "medium")
             {
                 tableOne.Columns[7].Delete();
-                tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
-                tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                if (caseinfo.tool == "WebInspect" || caseinfo.tool == "Webinspect" || caseinfo.tool == "webinspect")
+                {
+                    tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                }
+                else
+                {
+                    tableOne.Columns[4].Delete();
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                }
+                
             }
             else if (caseinfo.level == "Low" || caseinfo.level == "low")
             {
-                tableOne.Cell(1, 6).Merge(tableOne.Cell(1, 7));
-                tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
-                tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                if (caseinfo.tool == "WebInspect" || caseinfo.tool == "Webinspect" || caseinfo.tool == "webinspect")
+                {
+                    tableOne.Cell(1, 6).Merge(tableOne.Cell(1, 7));
+                    tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                }
+                else
+                {
+                    tableOne.Columns[4].Delete();
+                    tableOne.Cell(1, 6).Merge(tableOne.Cell(1, 7));
+                    tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
+                }
+                
             }
             tableOne.Cell(1, 4).Range.Text = "弱點數量";
+            
         }
 
         static void writeCaseInfoToReport(ref Word.Document report, CaseInfo caseinfo, Unit unit)
@@ -178,12 +273,14 @@ namespace wsrs
             report.Content.Find.Execute("p_endDate", false, false, false, false, false, true, 1, false, caseinfo.endDate, 2, false, false, false, false);
             report.Content.Find.Execute("p_tool", false, false, false, false, false, true, 1, false, caseinfo.tool, 2, false, false, false, false);
             report.Content.Find.Execute("p_numOfSites", false, false, false, false, false, true, 1, false, unit.sites.Count.ToString(), 2, false, false, false, false);
+
+            // write unit name
             if (unit.name != "000")
                 report.Content.Find.Execute("p_unitName", false, false, false, false, false, true, 1, false, "-" + unit.name, 2, false, false, false, false);
             else
                 report.Content.Find.Execute("p_unitName", false, false, false, false, false, true, 1, false, "", 2, false, false, false, false);
 
-
+            // write level string
             string levelString = "";
             if (caseinfo.tool == "WebInspect" || caseinfo.tool == "webinspect" || caseinfo.tool == "Webinspect")
             {
@@ -217,7 +314,7 @@ namespace wsrs
                         break;
                     case "High":
                     case "high":
-                        levelString = "高風險（Critical）";
+                        levelString = "高風險（High）";
                         break;
                     case "Medium":
                     case "medium":
@@ -230,7 +327,8 @@ namespace wsrs
                 }
             }
             report.Content.Find.Execute("p_level", false, false, false, false, false, true, 1, false, levelString, 2, false, false, false, false);
-            
+
+            // write info in header
             foreach (Word.Section section in report.Sections)
             {
                 Word.Range headerRange = section.Headers[Word.WdHeaderFooterIndex.wdHeaderFooterPrimary].Range;
@@ -243,6 +341,26 @@ namespace wsrs
                 else
                     headerRange.Find.Execute("p_unitName", false, false, false, false, false, true, 1, false, "", 2, false, false, false, false);
             }
+
+            // write no vuln string
+            string noVuln = "";
+            if (caseinfo.level == "Critical" || caseinfo.level == "critical")
+            {
+                noVuln = "嚴重";
+            }
+            else if (caseinfo.level == "High" || caseinfo.level == "high")
+            {
+                noVuln = "高";
+            }
+            else if (caseinfo.level == "Medium" || caseinfo.level == "medium")
+            {
+                noVuln = "中";
+            }
+            else if (caseinfo.level == "Low" || caseinfo.level == "low")
+            {
+                noVuln = "低";
+            }
+            report.Content.Find.Execute("p_noVuln", false, false, false, false, false, true, 1, false, noVuln, 2, false, false, false, false);
         }
 
         static void setCaseInfo(Excel.Worksheet sheet, ref CaseInfo caseinfo)
