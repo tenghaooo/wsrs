@@ -107,15 +107,21 @@ namespace wsrs
                     writeTableTwoToReport(ref report, caseinfo, Units[U]);
 
                     // write vuln description
+                    Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine("    [L] Writting vulns descriptions");
+                    Console.ResetColor();
                     writeVulnDesToReport(ref report, vulnDes, caseinfo, Units[U], vulnsName);
-                    
+
                     // write vuln check
+                    Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine("    [L] Writting vulns check");
+                    Console.ResetColor();
                     writeVulnCheckToReport(ref report, vulnCheck, caseinfo, Units[U], vulnsName);
-                    
+
                     // write vuln solution
+                    Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine("    [L] Writting vulns solutions");
+                    Console.ResetColor();
                     writeVulnSoluToReport(ref report, vulnSolu, caseinfo, Units[U], vulnsName);
 
                 }
@@ -137,6 +143,8 @@ namespace wsrs
 
                 }
 
+                // update content
+                Console.WriteLine("    [L] Updating content");
                 foreach (Word.TableOfContents tableOfContents in report.TablesOfContents)
                 {
                     tableOfContents.Update();
@@ -183,6 +191,7 @@ namespace wsrs
 
             for (int i = 0; i < vulnsName.Count; i++)
             {
+                Console.WriteLine("        [L] " + (i + 1).ToString() + "/" + vulnsName.Count.ToString() + ": " + vulnsName[i]);
                 // find desRange Start
                 foreach (Word.Paragraph p in report.Paragraphs)
                 {
@@ -240,6 +249,7 @@ namespace wsrs
                         // paste sites in this vuln
                         for (int j = 0; j < vulnSiteAndVulnUrl[vulnsName[i]].Count; j++)
                         {
+                            Console.WriteLine("            [L] site " + (j + 1).ToString() + "/" + vulnSiteAndVulnUrl[vulnsName[i]].Count.ToString() + ": " + vulnSiteAndVulnUrl[vulnsName[i]].ElementAt(j).Key);
                             // set desRange
                             foreach (Word.Paragraph ptemp in report.Paragraphs)
                             {
@@ -330,6 +340,7 @@ namespace wsrs
 
             for (int i = 0; i < vulnsName.Count; i++)
             {
+                Console.WriteLine("        [L] " + (i + 1).ToString() + "/" + vulnsName.Count.ToString() + ": " + vulnsName[i]);
                 // find desRange Start
                 desRange.Start = report.Content.End;
                 desRange.End = report.Content.End;
@@ -405,6 +416,7 @@ namespace wsrs
 
             for (int i = 0; i < vulnsName.Count; i++)
             {
+                Console.WriteLine("        [L] " + (i + 1).ToString() + "/" + vulnsName.Count.ToString() + ": " + vulnsName[i]);
                 // find desRange Start
                 foreach (Word.Paragraph p in report.Paragraphs)
                 {
