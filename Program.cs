@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace wsrs
 {
@@ -12,186 +13,225 @@ namespace wsrs
        static void Main(string[] args)
         {
 
-            printBanner();
-            
             var excelApp = new Excel.Application();
             var wordApp = new Word.Application();
             excelApp.Visible = false;
             wordApp.Visible = false;
+            Excel.Workbook excelBook = null;
+            Word.Document vulnDes = null;
+            Word.Document vulnSolu = null;
+            Word.Document vulnCheck = null;
 
-            List<Unit> Units = new List<Unit>();
-            CaseInfo caseinfo = new CaseInfo();
-
-            string resultExcel = @"D:\TemplateFiles\sample.xlsx";
-
-            Console.WriteLine("[L] Start running...");
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write("[I] Please input result excel path: ");
-            Console.ResetColor();
-
-            // resultExcel = Console.ReadLine();
-
-            // open result excel table
-            Console.WriteLine("[L] Openning result excel");
-            Excel.Workbook excelBook = excelApp.Workbooks.Open(resultExcel);
-
-            // open template docx
-            Word.Document vulnDes = wordApp.Documents.Open(@"D:\TemplateFiles\vulndes.docx");
-            Word.Document vulnSolu = wordApp.Documents.Open(@"D:\TemplateFiles\vulnsolu.docx");
-            Word.Document vulnCheck = wordApp.Documents.Open(@"D:\TemplateFiles\vulncheck.docx");
-
-            // setup units and sites
-            Console.WriteLine("[L] Loading units and sites");
-            Excel.Worksheet targetSheet = excelBook.Worksheets["targets"];
-            setUnitsAndSites(targetSheet, ref Units);
-
-            // setup vulns
-            Console.WriteLine("[L] Loading vulns");
-            Excel.Worksheet resultSheet = excelBook.Worksheets["result"];
-            setVulns(resultSheet, ref Units);
-
-            // setup caseinfo
-            Console.WriteLine("[L] Loading case info");
-            Excel.Worksheet caseInfoSheet = excelBook.Worksheets["caseinfo"];
-            setCaseInfo(caseInfoSheet, ref caseinfo);
-
-
-            /*
-             * Big Loop For Units, Create Unit Report
-             * */
-            Console.WriteLine("[L] Creating unit report");
-            for (int U = 0; U < Units.Count; U++)
+            try
             {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("[L] Creating report " + (U + 1).ToString() + "/" + Units.Count.ToString());
+                printBanner();
+
+                List<Unit> Units = new List<Unit>();
+                CaseInfo caseinfo = new CaseInfo();
+
+                string resultExcel = @"D:\TemplateFiles\sample.xlsx";
+
+                Console.WriteLine("[L] Start running...");
+
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.Write(@"[I] Please input result excel full path (ex. D:\TemplateFiles\sample.xlsx): ");
                 Console.ResetColor();
 
-                int vulnNum = getVulnNumOfUnit(Units[U]);
-                List<string> vulnsName = getVulnsNameOfUnit(Units[U]);
-                bool haveVuln = (vulnNum == 0) ? false : true;
-                Word.Document report;
+                resultExcel = Console.ReadLine();
 
-                // open report template
-                if (!haveVuln)
-                {
-                    report = wordApp.Documents.Open(@"D:\TemplateFiles\no_vuln_sample.docx");
-                }
-                else
-                {
-                    report = wordApp.Documents.Open(@"D:\TemplateFiles\sample.docx");
-                }
+                // open template docx
+                vulnDes = wordApp.Documents.Open(@"D:\TemplateFiles\vulndes.docx", ReadOnly: true);
+                vulnSolu = wordApp.Documents.Open(@"D:\TemplateFiles\vulnsolu.docx", ReadOnly: true);
+                vulnCheck = wordApp.Documents.Open(@"D:\TemplateFiles\vulncheck.docx", ReadOnly: true);
 
-                string reportPath = "D:\\Reports\\";
-                string reportName = "H07" + caseinfo.reportCode + "_" + caseinfo.period + "." + caseinfo.userName + caseinfo.reportName + "_" + caseinfo.period + ".docx"; ;
-                if (Units[U].name != "000")
-                    reportName = "H07" + caseinfo.reportCode + "_" + caseinfo.period + "." + caseinfo.userName + caseinfo.reportName + "-" + Units[U].name + "_" + caseinfo.period + ".docx";
+                // open result excel table
+                Console.WriteLine("[L] Openning result excel");
+                excelBook = excelApp.Workbooks.Open(resultExcel, ReadOnly: true);
 
                 
-                if (haveVuln)
+
+                // setup units and sites
+                Console.WriteLine("[L] Loading units and sites");
+                Excel.Worksheet targetSheet = excelBook.Worksheets["targets"];
+                setUnitsAndSites(targetSheet, ref Units);
+
+                // setup vulns
+                Console.WriteLine("[L] Loading vulns");
+                Excel.Worksheet resultSheet = excelBook.Worksheets["result"];
+                setVulns(resultSheet, ref Units);
+
+                // setup caseinfo
+                Console.WriteLine("[L] Loading case info");
+                Excel.Worksheet caseInfoSheet = excelBook.Worksheets["caseinfo"];
+                setCaseInfo(caseInfoSheet, ref caseinfo);
+
+
+                /*
+                 * Big Loop For Units, Create Unit Report
+                 * */
+                Console.WriteLine("[L] Creating unit report");
+                for (int U = 0; U < Units.Count; U++)
                 {
-                    // write report create date
-                    Console.WriteLine("    [L] Writting create date");
-                    writeCreateDateToReport(ref report);
-
-                    // write caseinfo to report and header
-                    Console.WriteLine("    [L] Writting caseinfo to report & header");
-                    writeCaseInfoToReport(ref report, caseinfo, Units[U]);
-
-                    // write table one
-                    Console.WriteLine("    [L] Writting table 1");
-                    writeTableOneToReport(ref report, caseinfo, Units[U]);
-
-                    // write table two
-                    Console.WriteLine("    [L] Writting table 2");
-                    writeTableTwoToReport(ref report, caseinfo, Units[U]);
-
-                    // write vuln description
                     Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("    [L] Writting vulns descriptions");
+                    Console.WriteLine("[L] Creating report " + (U + 1).ToString() + "/" + Units.Count.ToString());
                     Console.ResetColor();
-                    writeVulnDesToReport(ref report, vulnDes, caseinfo, Units[U], vulnsName);
 
-                    // write vuln check
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("    [L] Writting vulns check");
-                    Console.ResetColor();
-                    writeVulnCheckToReport(ref report, vulnCheck, caseinfo, Units[U], vulnsName);
+                    int vulnNum = getVulnNumOfUnit(Units[U]);
+                    List<string> vulnsName = getVulnsNameOfUnit(Units[U]);
+                    bool haveVuln = (vulnNum == 0) ? false : true;
+                    Word.Document report = null;
 
-                    // write vuln solution
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("    [L] Writting vulns solutions");
-                    Console.ResetColor();
-                    writeVulnSoluToReport(ref report, vulnSolu, caseinfo, Units[U], vulnsName);
+                    string reportPath = "D:\\Reports\\";
+                    string reportName = "H07" + caseinfo.reportCode + "_" + caseinfo.period + "." + caseinfo.userName + caseinfo.reportName + "_" + caseinfo.period + ".docx"; ;
+                    if (Units[U].name != "000")
+                        reportName = "H07" + caseinfo.reportCode + "_" + caseinfo.period + "." + caseinfo.userName + caseinfo.reportName + "-" + Units[U].name + "_" + caseinfo.period + ".docx";
 
+                    try
+                    {
+                        // open report template
+                        if (!haveVuln)
+                        {
+                            report = wordApp.Documents.Open(@"D:\TemplateFiles\no_vuln_sample.docx");
+                        }
+                        else
+                        {
+                            report = wordApp.Documents.Open(@"D:\TemplateFiles\sample.docx");
+                        }
+
+                        if (haveVuln)
+                        {
+                            // write report create date
+                            Console.WriteLine("    [L] Writting create date");
+                            writeCreateDateToReport(ref report);
+
+                            // write caseinfo to report and header
+                            Console.WriteLine("    [L] Writting caseinfo to report & header");
+                            writeCaseInfoToReport(ref report, caseinfo, Units[U]);
+
+                            // write table one
+                            Console.WriteLine("    [L] Writting table 1");
+                            writeTableOneToReport(ref report, caseinfo, Units[U]);
+
+                            // write table two
+                            Console.WriteLine("    [L] Writting table 2");
+                            writeTableTwoToReport(ref report, caseinfo, Units[U]);
+
+                            // write vuln description
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.WriteLine("    [L] Writting vulns descriptions");
+                            Console.ResetColor();
+                            writeVulnDesToReport(ref report, ref vulnDes, caseinfo, Units[U], vulnsName);
+
+                            // write vuln check
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.WriteLine("    [L] Writting vulns check");
+                            Console.ResetColor();
+                            writeVulnCheckToReport(ref report, ref vulnCheck, caseinfo, Units[U], vulnsName);
+
+                            // write vuln solution
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.WriteLine("    [L] Writting vulns solutions");
+                            Console.ResetColor();
+                            writeVulnSoluToReport(ref report, ref vulnSolu, caseinfo, Units[U], vulnsName);
+
+                        }
+                        else if (!haveVuln)
+                        {
+                            // write report create date
+                            Console.WriteLine("    [L] Writting create date");
+                            writeCreateDateToReport(ref report);
+
+                            // write caseinfo to report and header
+                            Console.WriteLine("    [L] Writting caseinfo to report & header");
+                            writeCaseInfoToReport(ref report, caseinfo, Units[U]);
+
+                            // write table one
+                            Console.WriteLine("    [L] Writting table 1");
+                            writeTableOneToReport(ref report, caseinfo, Units[U]);
+
+                            Console.WriteLine("    [L] This is a 0 vulns report");
+
+                        }
+
+                        // update content
+                        Console.WriteLine("    [L] Updating content");
+                        foreach (Word.TableOfContents tableOfContents in report.TablesOfContents)
+                        {
+                            tableOfContents.Update();
+                        }
+                        foreach (Word.TableOfFigures tableOfFigures in report.TablesOfFigures)
+                        {
+                            tableOfFigures.Update();
+                        }
+                        foreach (Word.Range storyRange in report.StoryRanges)
+                        {
+                            storyRange.Fields.Update();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("[L] Failed!!!");
+                        Console.WriteLine(ex.Message);
+                        Console.ResetColor();
+                    }
+                    finally
+                    {
+                        // save report
+                        Console.WriteLine("    [L] Saving report");
+                        if (report != null)
+                        {
+                            report.SaveAs2(reportPath + reportName);
+                            report.Close();
+                        }
+                       
+                    }
+                    Console.WriteLine("    [L] Done.");
                 }
-                else if (!haveVuln)
-                {
-                    // write report create date
-                    Console.WriteLine("    [L] Writting create date");
-                    writeCreateDateToReport(ref report);
-
-                    // write caseinfo to report and header
-                    Console.WriteLine("    [L] Writting caseinfo to report & header");
-                    writeCaseInfoToReport(ref report, caseinfo, Units[U]);
-
-                    // write table one
-                    Console.WriteLine("    [L] Writting table 1");
-                    writeTableOneToReport(ref report, caseinfo, Units[U]);
-
-                    Console.WriteLine("    [L] This is a 0 vulns report");
-
-                }
-
-                // update content
-                Console.WriteLine("    [L] Updating content");
-                foreach (Word.TableOfContents tableOfContents in report.TablesOfContents)
-                {
-                    tableOfContents.Update();
-                }
-                foreach (Word.TableOfFigures tableOfFigures in report.TablesOfFigures)
-                {
-                    tableOfFigures.Update();
-                }
-                foreach (Word.Range storyRange in report.StoryRanges)
-                {
-                    storyRange.Fields.Update();
-                }
-
-
-                // save report
-                Console.WriteLine("    [L] Saving report");
-                report.SaveAs2(reportPath + reportName);
-                report.Close();
-                Console.WriteLine("    [L] Done.");
             }
-
-            vulnDes.Close();
-            vulnSolu.Close();
-            vulnCheck.Close();
-
-            excelBook.Close();
-            excelApp.Quit();
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("[L] Failed!!!");
+                Console.WriteLine(ex.Message);
+                Console.ResetColor();
+            }
+            finally
+            {
+                if (vulnDes != null)
+                    vulnDes.Close();
+                if (vulnSolu != null)
+                    vulnSolu.Close();
+                if (vulnCheck != null)
+                    vulnCheck.Close();
+                if (excelBook != null)
+                    excelBook.Close();
+                if (excelApp != null)
+                    excelApp.Quit();
+                if (wordApp != null)
+                    wordApp.Quit();
+            }
             
-            wordApp.Quit();
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("[L] Finish!!!");
             Console.ResetColor();
             Console.ReadLine();
         }
 
-        static void writeVulnCheckToReport(ref Word.Document report, Word.Document vulnCheck, CaseInfo caseinfo, Unit unit, List<string> vulnsName)
+        static void writeVulnCheckToReport(ref Word.Document report, ref Word.Document vulnCheck, CaseInfo caseinfo, Unit unit, List<string> vulnsName)
         {
             Word.Range srcRange = vulnCheck.Content;
             Word.Range desRange = report.Content;
 
-
             // Dictionary<vulnName, Dictionary<siteName, vulnUrl>>
             Dictionary<string, Dictionary<string, string>> vulnSiteAndVulnUrl = getVulnSiteAndVulnUrl(unit);
+            int vulnCount = 0;
 
-            for (int i = 0; i < vulnsName.Count; i++)
+            for (int i = 0; i < vulnsName.Count; i++, vulnCount++)
             {
+
                 Console.WriteLine("        [L] " + (i + 1).ToString() + "/" + vulnsName.Count.ToString() + ": " + vulnsName[i]);
+                
                 // find desRange Start
                 foreach (Word.Paragraph p in report.Paragraphs)
                 {
@@ -203,6 +243,22 @@ namespace wsrs
                     }
                 }
 
+                // if this is a new vuln then break a new page
+                if (vulnCount != 0)
+                {
+                    desRange.InsertBreak(Word.WdBreakType.wdPageBreak);
+                    // find desRange Start
+                    foreach (Word.Paragraph p in report.Paragraphs)
+                    {
+                        if (p.Range.Text == "安全強化建議（修補方式）\r")
+                        {
+                            desRange.Start = p.Previous().Range.End;
+                            desRange.End = p.Previous().Range.End;
+                            break;
+                        }
+                    }
+                }
+
                 Word.Paragraph temp;
                 bool found = false;
 
@@ -210,7 +266,7 @@ namespace wsrs
                 foreach (Word.Paragraph p in vulnCheck.Paragraphs)
                 {
                     temp = p;
-                    if (temp.Range.Text == "弱點驗證不存在\r")
+                    if (temp.Range.Text == "p_noVuln弱點驗證不存在\r")
                     {
                         srcRange.Start = temp.Range.Start;
                         while (temp.Next().Range.Text != "endofparagraph\r")
@@ -235,7 +291,9 @@ namespace wsrs
 
                         // paste vuln title
                         srcRange.Copy();
+                        Thread.Sleep(100);
                         desRange.PasteSpecial(DataType: Word.WdPasteOptions.wdMatchDestinationFormatting);
+                        Thread.Sleep(100);
 
                         // range of vuln check content
                         temp = temp.Next();
@@ -262,7 +320,9 @@ namespace wsrs
                             }
                             // paste vuln check content
                             srcRange.Copy();
+                            Thread.Sleep(100);
                             desRange.PasteSpecial(DataType: Word.WdPasteOptions.wdMatchDestinationFormatting);
+                            Thread.Sleep(100);
 
                             // replace p_vulnSiteName and p_vulnUrl
                             report.Content.Find.Execute("p_vulnSiteName", false, false, false, false, false, true, 1, false, vulnSiteAndVulnUrl[vulnsName[i]].ElementAt(j).Key, 2, false, false, false, false);
@@ -278,7 +338,10 @@ namespace wsrs
                     Console.WriteLine("        [E] This vuln isn't exist in vulnCheck doc: " + vulnsName[i]);
                     Console.ResetColor();
                     srcRange.Copy();
+                    Thread.Sleep(100);
                     desRange.PasteSpecial(DataType: Word.WdPasteOptions.wdMatchDestinationFormatting);
+                    Thread.Sleep(100);
+                    report.Content.Find.Execute("p_noVuln", false, false, false, false, false, true, 1, false, vulnsName[i], 2, false, false, false, false);
                 }
                 
             }
@@ -333,7 +396,7 @@ namespace wsrs
             return result;
         }
 
-        static void writeVulnSoluToReport(ref Word.Document report, Word.Document vulnSolu, CaseInfo caseinfo, Unit unit, List<string> vulnsName)
+        static void writeVulnSoluToReport(ref Word.Document report, ref Word.Document vulnSolu, CaseInfo caseinfo, Unit unit, List<string> vulnsName)
         {
             Word.Range srcRange = vulnSolu.Content;
             Word.Range desRange = report.Content;
@@ -352,7 +415,7 @@ namespace wsrs
                 foreach (Word.Paragraph p in vulnSolu.Paragraphs)
                 {
                     temp = p;
-                    if (temp.Range.Text == "弱點修補建議不存在\r")
+                    if (temp.Range.Text == "p_noVuln弱點修補建議不存在\r")
                     {
                         srcRange.Start = temp.Range.Start;
                         while (temp.Next().Range.Text != "endofparagraph\r")
@@ -387,7 +450,10 @@ namespace wsrs
                     Console.ResetColor();
                 }
                 srcRange.Copy();
+                Thread.Sleep(100);
                 desRange.PasteSpecial(DataType: Word.WdPasteOptions.wdMatchDestinationFormatting);
+                Thread.Sleep(100);
+                report.Content.Find.Execute("p_noVuln", false, false, false, false, false, true, 1, false, vulnsName[i], 2, false, false, false, false);
             }
         }
 
@@ -408,7 +474,7 @@ namespace wsrs
             return vulnsName;
         }
 
-        static void writeVulnDesToReport(ref Word.Document report, Word.Document vulnDes, CaseInfo caseinfo, Unit unit, List<string> vulnsName)
+        static void writeVulnDesToReport(ref Word.Document report, ref Word.Document vulnDes, CaseInfo caseinfo, Unit unit, List<string> vulnsName)
         {
 
             Word.Range srcRange = vulnDes.Content;
@@ -435,7 +501,7 @@ namespace wsrs
                 foreach (Word.Paragraph p in vulnDes.Paragraphs)
                 {
                     temp = p;
-                    if (temp.Range.Text == "弱點說明不存在\r")
+                    if (temp.Range.Text == "p_noVuln弱點說明不存在\r")
                     {
                         srcRange.Start = temp.Range.Start;
                         while (temp.Next().Range.Text != "endofparagraph\r")
@@ -470,7 +536,10 @@ namespace wsrs
                     Console.ResetColor();
                 }
                 srcRange.Copy();
+                Thread.Sleep(100);
                 desRange.PasteSpecial(DataType: Word.WdPasteOptions.wdMatchDestinationFormatting);
+                Thread.Sleep(100);
+                report.Content.Find.Execute("p_noVuln", false, false, false, false, false, true, 1, false, vulnsName[i], 2, false, false, false, false);
             }
         }
 
@@ -752,7 +821,7 @@ namespace wsrs
             Console.WriteLine(@"                  \|_________|        \|_________| ");
             Console.WriteLine(@"                                                   ");
             Console.WriteLine(@"                                                   ");
-            Console.WriteLine(@"                   v0.7 by tenghaooo               ");
+            Console.WriteLine(@"                   v0.8 by tenghaooo               ");
             Console.WriteLine(@"                                                   ");
             Console.WriteLine(@"===================================================");
         }
