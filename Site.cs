@@ -13,15 +13,22 @@ namespace wsrs
         public string name { get; set; }
         public List<Vuln> vulns { get; set; }
 
-        public Dictionary<string, int> numOfLevelVulns { get; set; }
+        public Dictionary<string, int> numOfLevelVulnsByLevel { get; set; }
+        public Dictionary<string, int> numOfLevelVulnsByLevel2 { get; set; }
 
         public Site() {
             vulns = new List<Vuln>();
-            numOfLevelVulns = new Dictionary<string, int>();
-            numOfLevelVulns.Add("Critical", 0);
-            numOfLevelVulns.Add("High", 0);
-            numOfLevelVulns.Add("Medium", 0);
-            numOfLevelVulns.Add("Low", 0);
+            numOfLevelVulnsByLevel = new Dictionary<string, int>();
+            numOfLevelVulnsByLevel.Add("Critical", 0);
+            numOfLevelVulnsByLevel.Add("High", 0);
+            numOfLevelVulnsByLevel.Add("Medium", 0);
+            numOfLevelVulnsByLevel.Add("Low", 0);
+
+            numOfLevelVulnsByLevel2 = new Dictionary<string, int>();
+            numOfLevelVulnsByLevel2.Add("Critical", 0);
+            numOfLevelVulnsByLevel2.Add("High", 0);
+            numOfLevelVulnsByLevel2.Add("Medium", 0);
+            numOfLevelVulnsByLevel2.Add("Low", 0);
         }
 
         public Site(string url, string name, List<Vuln> vulns, Dictionary<string, int> numOfVulns)
@@ -29,7 +36,7 @@ namespace wsrs
             this.url = url;
             this.name = name;
             this.vulns = vulns;
-            this.numOfLevelVulns = numOfVulns;
+            this.numOfLevelVulnsByLevel = numOfVulns;
         }
         
     }

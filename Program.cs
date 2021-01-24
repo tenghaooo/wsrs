@@ -12,7 +12,6 @@ namespace wsrs
     {
        static void Main(string[] args)
         {
-
             var excelApp = new Excel.Application();
             var wordApp = new Word.Application();
             excelApp.Visible = false;
@@ -24,6 +23,7 @@ namespace wsrs
 
             try
             {
+                
                 printBanner();
 
                 List<Unit> Units = new List<Unit>();
@@ -48,146 +48,307 @@ namespace wsrs
                 Console.WriteLine("[L] Openning result excel");
                 excelBook = excelApp.Workbooks.Open(resultExcel, ReadOnly: true);
 
-                
-
                 // setup units and sites
                 Console.WriteLine("[L] Loading units and sites");
                 Excel.Worksheet targetSheet = excelBook.Worksheets["targets"];
                 setUnitsAndSites(targetSheet, ref Units);
 
-                // setup vulns
-                Console.WriteLine("[L] Loading vulns");
-                Excel.Worksheet resultSheet = excelBook.Worksheets["result"];
-                setVulns(resultSheet, ref Units);
+                int sum = 0;
+                for (int i = 0; i < Units.Count; i++)
+                {
+                    sum += Units[i].sites.Count;
+                }
+                Console.WriteLine("[L] Total " + Units.Count + " units and " + sum + " sites");
 
                 // setup caseinfo
                 Console.WriteLine("[L] Loading case info");
                 Excel.Worksheet caseInfoSheet = excelBook.Worksheets["caseinfo"];
                 setCaseInfo(caseInfoSheet, ref caseinfo);
 
-
-                /*
-                 * Big Loop For Units, Create Unit Report
-                 * */
-                Console.WriteLine("[L] Creating unit report");
-                for (int U = 0; U < Units.Count; U++)
+                // setup vulns
+                Console.WriteLine("[L] Loading vulns");
+                Excel.Worksheet resultSheet = excelBook.Worksheets["result"];
+                if (caseinfo.secondScan == "初" || caseinfo.secondScan == "初掃")
                 {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("[L] Creating report " + (U + 1).ToString() + "/" + Units.Count.ToString());
-                    Console.ResetColor();
-
-                    int vulnNum = getVulnNumOfUnit(Units[U]);
-                    List<string> vulnsName = getVulnsNameOfUnit(Units[U]);
-                    bool haveVuln = (vulnNum == 0) ? false : true;
-                    Word.Document report = null;
-
-                    string reportPath = "D:\\Reports\\";
-                    string reportName = "H07" + caseinfo.reportCode + "_" + caseinfo.period + "." + caseinfo.userName + caseinfo.reportName + "_" + caseinfo.period + ".docx"; ;
-                    if (Units[U].name != "000")
-                        reportName = "H07" + caseinfo.reportCode + "_" + caseinfo.period + "." + caseinfo.userName + caseinfo.reportName + "-" + Units[U].name + "_" + caseinfo.period + ".docx";
-
-                    try
-                    {
-                        // open report template
-                        if (!haveVuln)
-                        {
-                            report = wordApp.Documents.Open(@"D:\TemplateFiles\no_vuln_sample.docx");
-                        }
-                        else
-                        {
-                            report = wordApp.Documents.Open(@"D:\TemplateFiles\sample.docx");
-                        }
-
-                        if (haveVuln)
-                        {
-                            // write report create date
-                            Console.WriteLine("    [L] Writting create date");
-                            writeCreateDateToReport(ref report);
-
-                            // write caseinfo to report and header
-                            Console.WriteLine("    [L] Writting caseinfo to report & header");
-                            writeCaseInfoToReport(ref report, caseinfo, Units[U]);
-
-                            // write table one
-                            Console.WriteLine("    [L] Writting table 1");
-                            writeTableOneToReport(ref report, caseinfo, Units[U]);
-
-                            // write table two
-                            Console.WriteLine("    [L] Writting table 2");
-                            writeTableTwoToReport(ref report, caseinfo, Units[U]);
-
-                            // write vuln description
-                            Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine("    [L] Writting vulns descriptions");
-                            Console.ResetColor();
-                            writeVulnDesToReport(ref report, ref vulnDes, caseinfo, Units[U], vulnsName);
-
-                            // write vuln check
-                            Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine("    [L] Writting vulns check");
-                            Console.ResetColor();
-                            writeVulnCheckToReport(ref report, ref vulnCheck, caseinfo, Units[U], vulnsName);
-
-                            // write vuln solution
-                            Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine("    [L] Writting vulns solutions");
-                            Console.ResetColor();
-                            writeVulnSoluToReport(ref report, ref vulnSolu, caseinfo, Units[U], vulnsName);
-
-                        }
-                        else if (!haveVuln)
-                        {
-                            // write report create date
-                            Console.WriteLine("    [L] Writting create date");
-                            writeCreateDateToReport(ref report);
-
-                            // write caseinfo to report and header
-                            Console.WriteLine("    [L] Writting caseinfo to report & header");
-                            writeCaseInfoToReport(ref report, caseinfo, Units[U]);
-
-                            // write table one
-                            Console.WriteLine("    [L] Writting table 1");
-                            writeTableOneToReport(ref report, caseinfo, Units[U]);
-
-                            Console.WriteLine("    [L] This is a 0 vulns report");
-
-                        }
-
-                        // update content
-                        Console.WriteLine("    [L] Updating content");
-                        foreach (Word.TableOfContents tableOfContents in report.TablesOfContents)
-                        {
-                            tableOfContents.Update();
-                        }
-                        foreach (Word.TableOfFigures tableOfFigures in report.TablesOfFigures)
-                        {
-                            tableOfFigures.Update();
-                        }
-                        foreach (Word.Range storyRange in report.StoryRanges)
-                        {
-                            storyRange.Fields.Update();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("[L] Failed!!!");
-                        Console.WriteLine(ex.Message);
-                        Console.ResetColor();
-                    }
-                    finally
-                    {
-                        // save report
-                        Console.WriteLine("    [L] Saving report");
-                        if (report != null)
-                        {
-                            report.SaveAs2(reportPath + reportName);
-                            report.Close();
-                        }
-                       
-                    }
-                    Console.WriteLine("    [L] Done.");
+                    setVulns(resultSheet, ref Units);
                 }
+                else if (caseinfo.secondScan == "複" || caseinfo.secondScan == "複掃")
+                {
+                    setVulns2(resultSheet, ref Units);
+                }
+                
+
+                if (caseinfo.secondScan == "初" || caseinfo.secondScan == "初掃")
+                {
+                    /*
+                    * Big Loop For Units, Create Unit Report, First Scan
+                    * */
+                    Console.WriteLine("[L] Creating unit report, First Scan");
+                    for (int U = 0; U < Units.Count; U++)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("[L] Creating report " + (U + 1).ToString() + "/" + Units.Count.ToString() + ", Unit: " + Units[U].name);
+                        Console.ResetColor();
+
+                        int vulnNum = getVulnNumOfUnit(Units[U]);
+                        List<string> vulnsName = getVulnsNameOfUnit(Units[U]);
+                        bool haveVuln = (vulnNum == 0) ? false : true;
+                        Word.Document report = null;
+
+                        string reportPath = "D:\\Reports\\";
+                        string reportName = "H07" + caseinfo.reportCode + "_" + caseinfo.period + "." + caseinfo.userName + caseinfo.reportName + "_" + caseinfo.period + ".docx"; ;
+                        if (Units[U].name != "000")
+                            reportName = "H07" + caseinfo.reportCode + "_" + caseinfo.period + "." + caseinfo.userName + caseinfo.reportName + "-" + Units[U].name + "_" + caseinfo.period + ".docx";
+
+                        try
+                        {
+                            // open report template
+                            if (!haveVuln)
+                            {
+                                report = wordApp.Documents.Open(@"D:\TemplateFiles\no_vuln_sample.docx");
+                            }
+                            else
+                            {
+                                report = wordApp.Documents.Open(@"D:\TemplateFiles\sample.docx");
+                            }
+
+                            if (haveVuln)
+                            {
+                                // write report create date
+                                Console.WriteLine("    [L] Writting create date");
+                                writeCreateDateToReport(ref report);
+
+                                // write caseinfo to report and header
+                                Console.WriteLine("    [L] Writting caseinfo to report & header");
+                                writeCaseInfoToReport(ref report, caseinfo, Units[U]);
+
+                                // write table one
+                                Console.WriteLine("    [L] Writting table 1");
+                                writeTableOneToReport(ref report, caseinfo, Units[U]);
+
+                                // write table two
+                                Console.WriteLine("    [L] Writting table 2");
+                                writeTableTwoToReport(ref report, caseinfo, Units[U]);
+
+                                // write vuln description
+                                Console.ForegroundColor = ConsoleColor.Green;
+                                Console.WriteLine("    [L] Writting vulns descriptions");
+                                Console.ResetColor();
+                                writeVulnDesToReport(ref report, ref vulnDes, caseinfo, Units[U], vulnsName);
+
+                                // write vuln check
+                                Console.ForegroundColor = ConsoleColor.Green;
+                                Console.WriteLine("    [L] Writting vulns check");
+                                Console.ResetColor();
+                                writeVulnCheckToReport(ref report, ref vulnCheck, caseinfo, Units[U], vulnsName);
+
+                                // write vuln solution
+                                Console.ForegroundColor = ConsoleColor.Green;
+                                Console.WriteLine("    [L] Writting vulns solutions");
+                                Console.ResetColor();
+                                writeVulnSoluToReport(ref report, ref vulnSolu, caseinfo, Units[U], vulnsName);
+
+                            }
+                            else if (!haveVuln)
+                            {
+                                // write report create date
+                                Console.WriteLine("    [L] Writting create date");
+                                writeCreateDateToReport(ref report);
+
+                                // write caseinfo to report and header
+                                Console.WriteLine("    [L] Writting caseinfo to report & header");
+                                writeCaseInfoToReport(ref report, caseinfo, Units[U]);
+
+                                // write table one
+                                Console.WriteLine("    [L] Writting table 1");
+                                writeTableOneToReport(ref report, caseinfo, Units[U]);
+
+                                Console.WriteLine("    [L] This is a 0 vulns report");
+
+                            }
+
+                            // update content
+                            Console.WriteLine("    [L] Updating content");
+                            foreach (Word.TableOfContents tableOfContents in report.TablesOfContents)
+                            {
+                                tableOfContents.Update();
+                            }
+                            foreach (Word.TableOfFigures tableOfFigures in report.TablesOfFigures)
+                            {
+                                tableOfFigures.Update();
+                            }
+                            foreach (Word.Range storyRange in report.StoryRanges)
+                            {
+                                storyRange.Fields.Update();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine("[L] Failed!!!");
+                            Console.WriteLine(ex.Message);
+                            Console.ResetColor();
+                        }
+                        finally
+                        {
+                            // save report
+                            Console.WriteLine("    [L] Saving report");
+                            if (report != null)
+                            {
+                                report.SaveAs2(reportPath + reportName);
+                                report.Close();
+                            }
+
+                        }
+                        Console.WriteLine("    [L] Done.");
+                    }
+                }
+                else if (caseinfo.secondScan == "複" || caseinfo.secondScan == "複掃")
+                {
+                    /*
+                    * Big Loop For Units, Create Unit Report, Second Scan
+                    * */
+                    Console.WriteLine("[L] Creating unit report, Second Scan");
+                    for (int U = 0; U < Units.Count; U++)
+                    { 
+                        if (!needToCreateReport(Units[U]))
+                        {
+                            Console.ForegroundColor = ConsoleColor.Yellow;
+                            Console.WriteLine("[L] Skip this report because there are no vulns at first scan, Unit: "
+                                + (U + 1).ToString() + "/" + Units.Count.ToString() + " " + Units[U].name);
+                            Console.ResetColor();
+                            continue;
+                        }
+
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("[L] Creating report " + (U + 1).ToString() + "/" + Units.Count.ToString() + ", Unit: " + Units[U].name);
+                        Console.ResetColor();
+
+                        int vulnNum = getVulnNumOfUnit2(Units[U]);
+                        List<string> vulnsName = getVulnsNameOfUnit2(Units[U]);
+                        bool haveVuln = (vulnNum == 0) ? false : true;
+                        Word.Document report = null;
+
+                        string reportPath = "D:\\Reports\\";
+                        string reportName = "H07" + caseinfo.reportCode + "_" + caseinfo.period + "." + caseinfo.userName + caseinfo.reportName + "_" + caseinfo.period + ".docx"; ;
+                        if (Units[U].name != "000")
+                            reportName = "H07" + caseinfo.reportCode + "_" + caseinfo.period + "." + caseinfo.userName + caseinfo.reportName + "-" + Units[U].name + "_" + caseinfo.period + ".docx";
+
+                        try
+                        {
+                            // open report template
+                            if (!haveVuln)
+                            {
+                                report = wordApp.Documents.Open(@"D:\TemplateFiles\no_vuln_sample2.docx");
+                            }
+                            else
+                            {
+                                report = wordApp.Documents.Open(@"D:\TemplateFiles\sample2.docx");
+                            }
+
+                            if (haveVuln)
+                            {
+                                // write report create date
+                                Console.WriteLine("    [L] Writting create date");
+                                writeCreateDateToReport(ref report);
+
+                                // write caseinfo to report and header
+                                Console.WriteLine("    [L] Writting caseinfo to report & header");
+                                writeCaseInfoToReport2(ref report, caseinfo, Units[U]);
+
+                                // write table one
+                                Console.WriteLine("    [L] Writting table 1");
+                                writeTableOneToReport2(ref report, caseinfo, Units[U]);
+
+                                // write table two
+                                Console.WriteLine("    [L] Writting table 2");
+                                writeTableTwoToReport2(ref report, caseinfo, Units[U]);
+
+                                // write vuln description
+                                Console.ForegroundColor = ConsoleColor.Green;
+                                Console.WriteLine("    [L] Writting vulns descriptions");
+                                Console.ResetColor();
+                                writeVulnDesToReport(ref report, ref vulnDes, caseinfo, Units[U], vulnsName);
+
+                                // write vuln check
+                                Console.ForegroundColor = ConsoleColor.Green;
+                                Console.WriteLine("    [L] Writting vulns check");
+                                Console.ResetColor();
+                                writeVulnCheckToReport(ref report, ref vulnCheck, caseinfo, Units[U], vulnsName);
+
+                                // write vuln solution
+                                Console.ForegroundColor = ConsoleColor.Green;
+                                Console.WriteLine("    [L] Writting vulns solutions");
+                                Console.ResetColor();
+                                writeVulnSoluToReport(ref report, ref vulnSolu, caseinfo, Units[U], vulnsName);
+
+                            }
+                            else if (!haveVuln)
+                            {
+                                // write report create date
+                                Console.WriteLine("    [L] Writting create date");
+                                writeCreateDateToReport(ref report);
+
+                                // write caseinfo to report and header
+                                Console.WriteLine("    [L] Writting caseinfo to report & header");
+                                writeCaseInfoToReport2(ref report, caseinfo, Units[U]);
+
+                                // write table one
+                                Console.WriteLine("    [L] Writting table 1");
+                                writeTableOneToReport2(ref report, caseinfo, Units[U]);
+
+                                // write table two
+                                Console.WriteLine("    [L] Writting table 2");
+                                writeTableTwoToReport2(ref report, caseinfo, Units[U]);
+
+                                Console.WriteLine("    [L] This is a 0 vulns report");
+
+                            }
+
+                            // update content
+                            Console.WriteLine("    [L] Updating content");
+                            foreach (Word.TableOfContents tableOfContents in report.TablesOfContents)
+                            {
+                                tableOfContents.Update();
+                            }
+                            foreach (Word.TableOfFigures tableOfFigures in report.TablesOfFigures)
+                            {
+                                tableOfFigures.Update();
+                            }
+                            foreach (Word.Range storyRange in report.StoryRanges)
+                            {
+                                storyRange.Fields.Update();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine("[L] Failed!!!");
+                            Console.WriteLine(ex.Message);
+                            Console.ResetColor();
+                        }
+                        finally
+                        {
+                            // save report
+                            Console.WriteLine("    [L] Saving report");
+                            if (report != null)
+                            {
+                                report.SaveAs2(reportPath + reportName);
+                                report.Close();
+                            }
+
+                        }
+                        Console.WriteLine("    [L] Done.");
+                    }
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("    [E] caseinfo.secondScan wrong value");
+                    Console.ResetColor();
+                }
+                
+                
             }
             catch (Exception ex)
             {
@@ -213,11 +374,31 @@ namespace wsrs
             }
             
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("[L] Finish!!!");
+            Console.WriteLine("[L] Finish. Press Enter to quit!!!");
             Console.ResetColor();
             Console.ReadLine();
         }
 
+        /*  IF needToCreateReport is True, it means there are vulns in this unit at first scan
+         *  IF needToCreateReport is False, it means there are no vulns in this unit at first scan, so dont need to create report at second scan
+         */
+        static bool needToCreateReport(Unit unit)
+        {
+            bool result = true;
+            int sum = 0;
+            for (int i = 0; i < unit.sites.Count; i++)
+            {
+                sum += unit.sites[i].numOfLevelVulnsByLevel["Critical"];
+                sum += unit.sites[i].numOfLevelVulnsByLevel["High"];
+                sum += unit.sites[i].numOfLevelVulnsByLevel["Medium"];
+                sum += unit.sites[i].numOfLevelVulnsByLevel["Low"];
+            }
+
+            if (sum == 0)
+                result = false;
+
+            return result;
+        }
         static void writeVulnCheckToReport(ref Word.Document report, ref Word.Document vulnCheck, CaseInfo caseinfo, Unit unit, List<string> vulnsName)
         {
             Word.Range srcRange = vulnCheck.Content;
@@ -243,6 +424,7 @@ namespace wsrs
                     }
                 }
 
+                /*
                 // if this is a new vuln then break a new page
                 if (vulnCount != 0)
                 {
@@ -258,7 +440,7 @@ namespace wsrs
                         }
                     }
                 }
-
+                */
                 Word.Paragraph temp;
                 bool found = false;
 
@@ -327,6 +509,19 @@ namespace wsrs
                             // replace p_vulnSiteName and p_vulnUrl
                             report.Content.Find.Execute("p_vulnSiteName", false, false, false, false, false, true, 1, false, vulnSiteAndVulnUrl[vulnsName[i]].ElementAt(j).Key, 2, false, false, false, false);
                             report.Content.Find.Execute("p_vulnUrl", false, false, false, false, false, true, 1, false, vulnSiteAndVulnUrl[vulnsName[i]].ElementAt(j).Value, 2, false, false, false, false);
+
+                            // set desRange
+                            foreach (Word.Paragraph ptemp in report.Paragraphs)
+                            {
+                                if (ptemp.Range.Text == "安全強化建議（修補方式）\r")
+                                {
+                                    desRange.Start = ptemp.Previous().Range.End;
+                                    desRange.End = ptemp.Previous().Range.End;
+                                    break;
+                                }
+                            }
+                            desRange.InsertBreak(Word.WdBreakType.wdPageBreak);
+
                         }
 
                         break;
@@ -474,6 +669,24 @@ namespace wsrs
             return vulnsName;
         }
 
+        static List<string> getVulnsNameOfUnit2(Unit unit)
+        {
+            List<string> vulnsName = new List<string>();
+
+            for (int i = 0; i < unit.sites.Count; i++)
+            {
+                for (int j = 0; j < unit.sites[i].vulns.Count; j++)
+                {
+                    if (!vulnsName.Contains(unit.sites[i].vulns[j].name))
+                    {
+                        if (unit.sites[i].vulns[j].vulnUrl2 != "此弱點已不存在")
+                            vulnsName.Add(unit.sites[i].vulns[j].name);
+                    }
+                }
+            }
+            return vulnsName;
+        }
+
         static void writeVulnDesToReport(ref Word.Document report, ref Word.Document vulnDes, CaseInfo caseinfo, Unit unit, List<string> vulnsName)
         {
 
@@ -543,6 +756,19 @@ namespace wsrs
             }
         }
 
+        
+        static int getVulnNumOfSiteFirstScan(Site site)
+        {
+            int vulnNum = 0;
+
+            vulnNum += site.numOfLevelVulnsByLevel["Critical"];
+            vulnNum += site.numOfLevelVulnsByLevel["High"];
+            vulnNum += site.numOfLevelVulnsByLevel["Medium"];
+            vulnNum += site.numOfLevelVulnsByLevel["Low"];
+
+            return vulnNum;
+        }
+
         static int getVulnNumOfUnit(Unit unit)
         {
             int vulnNum = 0;
@@ -550,6 +776,21 @@ namespace wsrs
             for (int i = 0; i < unit.sites.Count; i++)
             {
                 vulnNum += unit.sites[i].vulns.Count;
+            }
+
+            return vulnNum;
+        }
+
+        static int getVulnNumOfUnit2(Unit unit)
+        {
+            int vulnNum = 0;
+
+            for (int i = 0; i < unit.sites.Count; i++)
+            {
+                vulnNum += unit.sites[i].numOfLevelVulnsByLevel2["Critical"];
+                vulnNum += unit.sites[i].numOfLevelVulnsByLevel2["High"];
+                vulnNum += unit.sites[i].numOfLevelVulnsByLevel2["Medium"];
+                vulnNum += unit.sites[i].numOfLevelVulnsByLevel2["Low"];
             }
 
             return vulnNum;
@@ -595,6 +836,167 @@ namespace wsrs
             }
         }
 
+        static void writeTableTwoToReport2(ref Word.Document report, CaseInfo caseinfo, Unit unit)
+        {
+            Word.Table tableTwo = report.Tables[4];
+            int row = 2;
+            for (int i = 0; i < unit.sites.Count; i++)
+            {
+                for (int j = 0; j < unit.sites[i].vulns.Count; j++)
+                {
+                    tableTwo.Cell(row, 1).Range.Text = unit.sites[i].url;
+                    tableTwo.Cell(row, 2).Range.Text = unit.sites[i].name;
+                    tableTwo.Cell(row, 3).Range.Text = unit.sites[i].vulns[j].name;
+                    tableTwo.Cell(row, 4).Range.Text = unit.sites[i].vulns[j].level;
+                    tableTwo.Cell(row, 5).Range.Text = unit.sites[i].vulns[j].vulnUrl;
+                    tableTwo.Cell(row, 6).Range.Text = unit.sites[i].vulns[j].vulnUrl2;
+                    tableTwo.Rows.Add();
+                    row++;
+                }
+            }
+            tableTwo.Rows.Last.Delete();
+
+            for (int i = 2; i <= tableTwo.Rows.Count; i++)
+            {
+                tableTwo.Cell(i, 1).Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphLeft;
+                tableTwo.Cell(i, 2).Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphLeft;
+                tableTwo.Cell(i, 3).Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphLeft;
+                tableTwo.Cell(i, 5).Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphLeft;
+                tableTwo.Cell(i, 6).Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphLeft;
+            }
+        }
+
+        static void writeTableOneToReport2(ref Word.Document report, CaseInfo caseinfo, Unit unit)
+        {
+            Word.Table tableOne = report.Tables[3];
+            int indexOfSites = 0;
+            int row = 3;
+            do
+            {
+                if (indexOfSites > 0)
+                {
+                    tableOne.Rows.Add();
+                    row++;
+                }
+                tableOne.Cell(row, 1).Range.Text = (indexOfSites + 1).ToString();
+                tableOne.Cell(row, 2).Range.Text = unit.sites[indexOfSites].url;
+                tableOne.Cell(row, 3).Range.Text = unit.sites[indexOfSites].name;
+                tableOne.Cell(row, 4).Range.Text = unit.sites[indexOfSites].numOfLevelVulnsByLevel["Critical"].ToString();
+                tableOne.Cell(row, 5).Range.Text = unit.sites[indexOfSites].numOfLevelVulnsByLevel["High"].ToString();
+                tableOne.Cell(row, 6).Range.Text = unit.sites[indexOfSites].numOfLevelVulnsByLevel["Medium"].ToString();
+                tableOne.Cell(row, 7).Range.Text = unit.sites[indexOfSites].numOfLevelVulnsByLevel["Low"].ToString();
+                if (getVulnNumOfSiteFirstScan(unit.sites[indexOfSites]) != 0)
+                {
+                    tableOne.Cell(row, 8).Range.Text = unit.sites[indexOfSites].numOfLevelVulnsByLevel2["Critical"].ToString();
+                    tableOne.Cell(row, 9).Range.Text = unit.sites[indexOfSites].numOfLevelVulnsByLevel2["High"].ToString();
+                    tableOne.Cell(row, 10).Range.Text = unit.sites[indexOfSites].numOfLevelVulnsByLevel2["Medium"].ToString();
+                    tableOne.Cell(row, 11).Range.Text = unit.sites[indexOfSites].numOfLevelVulnsByLevel2["Low"].ToString();
+                }
+                else
+                {
+                    tableOne.Cell(row, 8).Range.Text = "N/A";
+                    tableOne.Cell(row, 9).Range.Text = "N/A";
+                    tableOne.Cell(row, 10).Range.Text = "N/A";
+                    tableOne.Cell(row, 11).Range.Text = "N/A";
+                }
+                
+
+                indexOfSites++;
+            } while (indexOfSites < unit.sites.Count);
+
+            // merge cells
+            tableOne.Cell(1, 1).Merge(tableOne.Cell(2, 1));
+            tableOne.Cell(1, 2).Merge(tableOne.Cell(2, 2));
+            tableOne.Cell(1, 3).Merge(tableOne.Cell(2, 3));
+
+            tableOne.Cell(1, 1).Range.Text = "序號";
+            tableOne.Cell(1, 2).Range.Text = "URL/IP";
+            tableOne.Cell(1, 3).Range.Text = "網站名稱";
+
+            // delete columns according to verify level and merge
+            if (caseinfo.level == "Critical" || caseinfo.level == "critical")
+            {
+                tableOne.Columns[11].Delete();
+                tableOne.Columns[10].Delete();
+                tableOne.Columns[9].Delete();
+                tableOne.Columns[5].Delete();
+                tableOne.Columns[5].Delete();
+                tableOne.Columns[5].Delete();
+                tableOne.Columns[4].Width = 90;
+                tableOne.Columns[5].Width = 90;
+            }
+            else if (caseinfo.level == "High" || caseinfo.level == "high")
+            {
+                tableOne.Columns[11].Delete();
+                tableOne.Columns[10].Delete();
+                tableOne.Columns[6].Delete();
+                tableOne.Columns[6].Delete();
+                if (caseinfo.tool == "WebInspect" || caseinfo.tool == "Webinspect" || caseinfo.tool == "webinspect")
+                {
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                    tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
+                }
+                else
+                {
+                    tableOne.Columns[6].Delete();
+                    tableOne.Columns[4].Delete();
+                    tableOne.Columns[4].Width = 90;
+                    tableOne.Columns[5].Width = 90;
+                }
+            }
+            else if (caseinfo.level == "Medium" || caseinfo.level == "medium")
+            {
+                tableOne.Columns[11].Delete();
+                tableOne.Columns[7].Delete();
+                if (caseinfo.tool == "WebInspect" || caseinfo.tool == "Webinspect" || caseinfo.tool == "webinspect")
+                {
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                    tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
+                    tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
+                }
+                else
+                {
+                    tableOne.Columns[7].Delete();
+                    tableOne.Columns[4].Delete();
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                    tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
+                }
+
+            }
+            else if (caseinfo.level == "Low" || caseinfo.level == "low")
+            {
+                if (caseinfo.tool == "WebInspect" || caseinfo.tool == "Webinspect" || caseinfo.tool == "webinspect")
+                {
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                    tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
+                    tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
+                    tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
+                }
+                else
+                {
+                    tableOne.Columns[8].Delete();
+                    tableOne.Columns[4].Delete();
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                    tableOne.Cell(1, 4).Merge(tableOne.Cell(1, 5));
+                    tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
+                    tableOne.Cell(1, 5).Merge(tableOne.Cell(1, 6));
+                }
+
+            }
+            tableOne.Cell(1, 4).Range.Text = "初掃弱點數量";
+            tableOne.Cell(1, 5).Range.Text = "複掃弱點數量";
+
+            for (int i = 3; i <= tableOne.Rows.Count; i++)
+            {
+                tableOne.Cell(i, 2).Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphLeft;
+                tableOne.Cell(i, 3).Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphLeft;
+            }
+
+        }
+
         static void writeTableOneToReport(ref Word.Document report, CaseInfo caseinfo, Unit unit)
         {
             Word.Table tableOne = report.Tables[3];
@@ -610,10 +1012,10 @@ namespace wsrs
                 tableOne.Cell(row, 1).Range.Text = (indexOfSites + 1).ToString();
                 tableOne.Cell(row, 2).Range.Text = unit.sites[indexOfSites].url;
                 tableOne.Cell(row, 3).Range.Text = unit.sites[indexOfSites].name;
-                tableOne.Cell(row, 4).Range.Text = unit.sites[indexOfSites].numOfLevelVulns["Critical"].ToString();
-                tableOne.Cell(row, 5).Range.Text = unit.sites[indexOfSites].numOfLevelVulns["High"].ToString();
-                tableOne.Cell(row, 6).Range.Text = unit.sites[indexOfSites].numOfLevelVulns["Medium"].ToString();
-                tableOne.Cell(row, 7).Range.Text = unit.sites[indexOfSites].numOfLevelVulns["Low"].ToString();
+                tableOne.Cell(row, 4).Range.Text = unit.sites[indexOfSites].numOfLevelVulnsByLevel["Critical"].ToString();
+                tableOne.Cell(row, 5).Range.Text = unit.sites[indexOfSites].numOfLevelVulnsByLevel["High"].ToString();
+                tableOne.Cell(row, 6).Range.Text = unit.sites[indexOfSites].numOfLevelVulnsByLevel["Medium"].ToString();
+                tableOne.Cell(row, 7).Range.Text = unit.sites[indexOfSites].numOfLevelVulnsByLevel["Low"].ToString();
 
                 indexOfSites++;
             } while (indexOfSites < unit.sites.Count);
@@ -688,6 +1090,127 @@ namespace wsrs
                 tableOne.Cell(i, 3).Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphLeft;
             }
 
+        }
+
+        static int getNumOfSitesOfSecondScan(Unit unit)
+        {
+            int numOfSites = 0;
+            int numOfZeroVulnSiteInFirstScan = 0;
+
+            for (int i = 0; i < unit.sites.Count; i++)
+            {
+                if (getVulnNumOfSiteFirstScan(unit.sites[i]) == 0)
+                {
+                    numOfZeroVulnSiteInFirstScan++;
+                }
+            }
+
+            numOfSites = unit.sites.Count - numOfZeroVulnSiteInFirstScan;
+
+            return numOfSites;
+        }
+
+        static void writeCaseInfoToReport2(ref Word.Document report, CaseInfo caseinfo, Unit unit)
+        {
+            report.Content.Find.Execute("p_userName", false, false, false, false, false, true, 1, false, caseinfo.userName, 2, false, false, false, false);
+            report.Content.Find.Execute("p_projectName", false, false, false, false, false, true, 1, false, caseinfo.projectName, 2, false, false, false, false);
+            report.Content.Find.Execute("p_reportName", false, false, false, false, false, true, 1, false, caseinfo.reportName, 2, false, false, false, false);
+            report.Content.Find.Execute("p_period", false, false, false, false, false, true, 1, false, caseinfo.period, 2, false, false, false, false);
+            report.Content.Find.Execute("p_reportCode", false, false, false, false, false, true, 1, false, caseinfo.reportCode, 2, false, false, false, false);
+            report.Content.Find.Execute("p_author", false, false, false, false, false, true, 1, false, caseinfo.author, 2, false, false, false, false);
+            report.Content.Find.Execute("p_year", false, false, false, false, false, true, 1, false, caseinfo.year, 2, false, false, false, false);
+            report.Content.Find.Execute("p_startDate", false, false, false, false, false, true, 1, false, caseinfo.startDate, 2, false, false, false, false);
+            report.Content.Find.Execute("p_endDate", false, false, false, false, false, true, 1, false, caseinfo.endDate, 2, false, false, false, false);
+            report.Content.Find.Execute("p_tool", false, false, false, false, false, true, 1, false, caseinfo.tool, 2, false, false, false, false);
+            report.Content.Find.Execute("p_numOfSites", false, false, false, false, false, true, 1, false, getNumOfSitesOfSecondScan(unit).ToString(), 2, false, false, false, false);
+
+            // write unit name
+            if (unit.name != "000")
+                report.Content.Find.Execute("p_unitName", false, false, false, false, false, true, 1, false, "-" + unit.name, 2, false, false, false, false);
+            else
+                report.Content.Find.Execute("p_unitName", false, false, false, false, false, true, 1, false, "", 2, false, false, false, false);
+
+            // write level string
+            string levelString = "";
+            if (caseinfo.tool == "WebInspect" || caseinfo.tool == "webinspect" || caseinfo.tool == "Webinspect")
+            {
+                switch (caseinfo.level)
+                {
+                    case "Critical":
+                    case "critical":
+                        levelString = "嚴重風險（Critical）";
+                        break;
+                    case "High":
+                    case "high":
+                        levelString = "嚴重 / 高風險（Critical / High）";
+                        break;
+                    case "Medium":
+                    case "medium":
+                        levelString = "嚴重 / 高 / 中風險（Critical / High / Medium）";
+                        break;
+                    case "Low":
+                    case "low":
+                        levelString = "嚴重 / 高 / 中 / 低風險（Critical / High / Medium / Low）";
+                        break;
+                }
+            }
+            else
+            {
+                switch (caseinfo.level)
+                {
+                    case "Critical":
+                    case "critical":
+                        levelString = "嚴重風險（Critical）";
+                        break;
+                    case "High":
+                    case "high":
+                        levelString = "高風險（High）";
+                        break;
+                    case "Medium":
+                    case "medium":
+                        levelString = "高 / 中風險（High / Medium）";
+                        break;
+                    case "Low":
+                    case "low":
+                        levelString = "高 / 中 / 低風險（High / Medium / Low）";
+                        break;
+                }
+            }
+            report.Content.Find.Execute("p_level", false, false, false, false, false, true, 1, false, levelString, 2, false, false, false, false);
+
+            // write info in header
+            foreach (Word.Section section in report.Sections)
+            {
+                Word.Range headerRange = section.Headers[Word.WdHeaderFooterIndex.wdHeaderFooterPrimary].Range;
+                headerRange.Find.Execute("p_userName", false, false, false, false, false, true, 1, false, caseinfo.userName, 2, false, false, false, false);
+                headerRange.Find.Execute("p_projectName", false, false, false, false, false, true, 1, false, caseinfo.projectName, 2, false, false, false, false);
+                headerRange.Find.Execute("p_reportName", false, false, false, false, false, true, 1, false, caseinfo.reportName, 2, false, false, false, false);
+                headerRange.Find.Execute("p_period", false, false, false, false, false, true, 1, false, caseinfo.period, 2, false, false, false, false);
+                if (unit.name != "000")
+                    headerRange.Find.Execute("p_unitName", false, false, false, false, false, true, 1, false, "-" + unit.name, 2, false, false, false, false);
+                else
+                    headerRange.Find.Execute("p_unitName", false, false, false, false, false, true, 1, false, "", 2, false, false, false, false);
+            }
+
+            // write no vuln string
+            string noVuln = "";
+            if (caseinfo.level == "Critical" || caseinfo.level == "critical")
+            {
+                noVuln = "嚴重";
+            }
+            else if (caseinfo.level == "High" || caseinfo.level == "high")
+            {
+                noVuln = "高";
+            }
+            else if (caseinfo.level == "Medium" || caseinfo.level == "medium")
+            {
+                noVuln = "中";
+            }
+            else if (caseinfo.level == "Low" || caseinfo.level == "low")
+            {
+                noVuln = "低";
+            }
+            report.Content.Find.Execute("p_noVuln", false, false, false, false, false, true, 1, false, noVuln, 2, false, false, false, false);
         }
 
         static void writeCaseInfoToReport(ref Word.Document report, CaseInfo caseinfo, Unit unit)
@@ -806,6 +1329,7 @@ namespace wsrs
             caseinfo.startDate = sheet.Cells[2, "I"].Value.ToString();
             caseinfo.endDate = sheet.Cells[2, "J"].Value.ToString();
             caseinfo.level = sheet.Cells[2, "K"].Value.ToString();
+            caseinfo.secondScan = sheet.Cells[2, "L"].Value.ToString();
         }
 
         static void printBanner()
@@ -826,7 +1350,7 @@ namespace wsrs
             Console.WriteLine(@"===================================================");
         }
 
-        static void setVulns(Excel.Worksheet resultSheet, ref List<Unit> Units)
+        static void setVulns2(Excel.Worksheet resultSheet, ref List<Unit> Units)
         {
             int x = 2;
             while (resultSheet.Cells[x, "A"].Value != null)
@@ -836,12 +1360,15 @@ namespace wsrs
                 string currentVulnName = resultSheet.Cells[x, "C"].Value.ToString();
                 string currentVulnLevel = resultSheet.Cells[x, "D"].Value.ToString();
                 string currentVulnUrl = resultSheet.Cells[x, "E"].Value.ToString();
+                string currentVulnUrl2 = resultSheet.Cells[x, "F"].Value.ToString();
 
                 // add vuln to units sites
                 Vuln newVuln = new Vuln();
                 newVuln.name = currentVulnName;
                 newVuln.level = currentVulnLevel;
                 newVuln.vulnUrl = currentVulnUrl;
+                newVuln.vulnUrl2 = currentVulnUrl2;
+
                 // find current vuln in which unit and site
                 for (int y = 0; y < Units.Count; y++)
                 {
@@ -851,7 +1378,11 @@ namespace wsrs
                         if (Units[y].sites[z].name == currentSiteName)
                         {
                             Units[y].sites[z].vulns.Add(newVuln);
-                            Units[y].sites[z].numOfLevelVulns[currentVulnLevel]++;
+                            Units[y].sites[z].numOfLevelVulnsByLevel[currentVulnLevel]++;
+                            if (currentVulnUrl2 != "此弱點已不存在")
+                            {
+                                Units[y].sites[z].numOfLevelVulnsByLevel2[currentVulnLevel]++;
+                            }
                             found = true;
                             break;
                         }
@@ -861,6 +1392,44 @@ namespace wsrs
                 }
                 x++;
             }
+        }
+
+        static void setVulns(Excel.Worksheet resultSheet, ref List<Unit> Units)
+        {
+            
+                int x = 2;
+                while (resultSheet.Cells[x, "A"].Value != null)
+                {
+                    string currentUrl = resultSheet.Cells[x, "A"].Value.ToString();
+                    string currentSiteName = resultSheet.Cells[x, "B"].Value.ToString();
+                    string currentVulnName = resultSheet.Cells[x, "C"].Value.ToString();
+                    string currentVulnLevel = resultSheet.Cells[x, "D"].Value.ToString();
+                    string currentVulnUrl = resultSheet.Cells[x, "E"].Value.ToString();
+
+                    // add vuln to units sites
+                    Vuln newVuln = new Vuln();
+                    newVuln.name = currentVulnName;
+                    newVuln.level = currentVulnLevel;
+                    newVuln.vulnUrl = currentVulnUrl;
+                    // find current vuln in which unit and site
+                    for (int y = 0; y < Units.Count; y++)
+                    {
+                        bool found = false;
+                        for (int z = 0; z < Units[y].sites.Count; z++)
+                        {
+                            if (Units[y].sites[z].name == currentSiteName)
+                            {
+                                Units[y].sites[z].vulns.Add(newVuln);
+                                Units[y].sites[z].numOfLevelVulnsByLevel[currentVulnLevel]++;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found)
+                            break;
+                    }
+                    x++;
+                }
         }
 
         static void setUnitsAndSites(Excel.Worksheet targetSheet, ref List<Unit> Units)

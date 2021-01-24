@@ -22,6 +22,5 @@ namespace wsrs
             this.name = name;
             this.sites = sites;
         }
-        
     }
 }
