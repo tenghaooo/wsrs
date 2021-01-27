@@ -274,7 +274,7 @@ namespace wsrs
                                 Console.ForegroundColor = ConsoleColor.Green;
                                 Console.WriteLine("    [L] Writting vulns check");
                                 Console.ResetColor();
-                                writeVulnCheckToReport(ref report, ref vulnCheck, caseinfo, Units[U], vulnsName);
+                                writeVulnCheckToReport2(ref report, ref vulnCheck, caseinfo, Units[U], vulnsName);
 
                                 // write vuln solution
                                 Console.ForegroundColor = ConsoleColor.Green;
@@ -555,6 +555,162 @@ namespace wsrs
             }
         }
 
+        static void writeVulnCheckToReport2(ref Word.Document report, ref Word.Document vulnCheck, CaseInfo caseinfo, Unit unit, List<string> vulnsName)
+        {
+            Word.Range srcRange = vulnCheck.Content;
+            Word.Range desRange = report.Content;
+
+            // Dictionary<vulnName, Dictionary<siteName, vulnUrl>>
+            Dictionary<string, Dictionary<string, string>> vulnSiteAndVulnUrl = getVulnSiteAndVulnUrl2(unit);
+            int vulnCount = 0;
+
+            for (int i = 0; i < vulnsName.Count; i++, vulnCount++)
+            {
+
+                Console.WriteLine("        [L] " + (i + 1).ToString() + "/" + vulnsName.Count.ToString() + ": " + vulnsName[i]);
+
+                // find desRange Start
+                foreach (Word.Paragraph p in report.Paragraphs)
+                {
+                    if (p.Range.Text == "安全強化建議（修補方式）\r")
+                    {
+                        desRange.Start = p.Previous().Range.End;
+                        desRange.End = p.Previous().Range.End;
+                        break;
+                    }
+                }
+
+                /*
+                // if this is a new vuln then break a new page
+                if (vulnCount != 0)
+                {
+                    desRange.InsertBreak(Word.WdBreakType.wdPageBreak);
+                    // find desRange Start
+                    foreach (Word.Paragraph p in report.Paragraphs)
+                    {
+                        if (p.Range.Text == "安全強化建議（修補方式）\r")
+                        {
+                            desRange.Start = p.Previous().Range.End;
+                            desRange.End = p.Previous().Range.End;
+                            break;
+                        }
+                    }
+                }
+                */
+                Word.Paragraph temp;
+                bool found = false;
+
+                // set default srcRange
+                foreach (Word.Paragraph p in vulnCheck.Paragraphs)
+                {
+                    temp = p;
+                    if (temp.Range.Text == "p_noVuln弱點驗證不存在\r")
+                    {
+                        srcRange.Start = temp.Range.Start;
+                        while (temp.Next().Range.Text != "endofparagraph\r")
+                        {
+                            temp = temp.Next();
+                        }
+                        srcRange.End = temp.Range.End;
+                        break;
+                    }
+                }
+
+                // find real srcRange and copy paste
+                foreach (Word.Paragraph p in vulnCheck.Paragraphs)
+                {
+                    temp = p;
+                    if (temp.Range.Text == vulnsName[i] + "\r")
+                    {
+                        // range of vuln title
+                        srcRange.Start = temp.Range.Start;
+                        srcRange.End = temp.Range.End;
+                        found = true;
+
+                        // paste vuln title
+                        srcRange.Copy();
+                        Thread.Sleep(100);
+                        desRange.PasteSpecial(DataType: Word.WdPasteOptions.wdMatchDestinationFormatting);
+                        Thread.Sleep(100);
+
+                        // range of vuln check content
+                        temp = temp.Next();
+                        srcRange.Start = temp.Range.Start;
+                        while (temp.Next().Range.Text != "endofparagraph\r")
+                        {
+                            temp = temp.Next();
+                        }
+                        srcRange.End = temp.Range.End;
+
+                        // paste sites in this vuln
+                        for (int j = 0; j < vulnSiteAndVulnUrl[vulnsName[i]].Count; j++)
+                        {
+                            Console.WriteLine("            [L] site " + (j + 1).ToString() + "/" + vulnSiteAndVulnUrl[vulnsName[i]].Count.ToString() + ": " + vulnSiteAndVulnUrl[vulnsName[i]].ElementAt(j).Key);
+                            // set desRange
+                            foreach (Word.Paragraph ptemp in report.Paragraphs)
+                            {
+                                if (ptemp.Range.Text == "安全強化建議（修補方式）\r")
+                                {
+                                    desRange.Start = ptemp.Previous().Range.End;
+                                    desRange.End = ptemp.Previous().Range.End;
+                                    break;
+                                }
+                            }
+                            // paste vuln check content
+                            srcRange.Copy();
+                            Thread.Sleep(100);
+                            desRange.PasteSpecial(DataType: Word.WdPasteOptions.wdMatchDestinationFormatting);
+                            Thread.Sleep(100);
+
+                            // replace p_vulnSiteName and p_vulnUrl
+                            report.Content.Find.Execute("p_vulnSiteName", false, false, false, false, false, true, 1, false, vulnSiteAndVulnUrl[vulnsName[i]].ElementAt(j).Key, 2, false, false, false, false);
+                            report.Content.Find.Execute("p_vulnUrl", false, false, false, false, false, true, 1, false, vulnSiteAndVulnUrl[vulnsName[i]].ElementAt(j).Value, 2, false, false, false, false);
+
+                            // set desRange
+                            foreach (Word.Paragraph ptemp in report.Paragraphs)
+                            {
+                                if (ptemp.Range.Text == "安全強化建議（修補方式）\r")
+                                {
+                                    desRange.Start = ptemp.Previous().Range.End;
+                                    desRange.End = ptemp.Previous().Range.End;
+                                    break;
+                                }
+                            }
+                            desRange.InsertBreak(Word.WdBreakType.wdPageBreak);
+
+                        }
+
+                        break;
+                    }
+                }
+                if (!found)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("        [E] This vuln isn't exist in vulnCheck doc: " + vulnsName[i]);
+                    Console.ResetColor();
+                    srcRange.Copy();
+                    Thread.Sleep(100);
+                    desRange.PasteSpecial(DataType: Word.WdPasteOptions.wdMatchDestinationFormatting);
+                    Thread.Sleep(100);
+                    report.Content.Find.Execute("p_noVuln", false, false, false, false, false, true, 1, false, vulnsName[i], 2, false, false, false, false);
+                }
+
+            }
+
+            // insert break
+            foreach (Word.Paragraph p in report.Paragraphs)
+            {
+                if (p.Range.Text == "弱點手動檢核\r")
+                {
+                    Word.Range temp = report.Content;
+                    temp.Start = p.Previous().Range.End;
+                    temp.End = p.Previous().Range.End;
+                    temp.InsertBreak(Word.WdBreakType.wdPageBreak);
+                    break;
+                }
+            }
+        }
+
         static Dictionary<string, Dictionary<string, string>> getVulnSiteAndVulnUrl(Unit unit)
         {
             Dictionary<string, Dictionary<string, string>> result = new Dictionary<string, Dictionary<string, string>>();
@@ -584,6 +740,49 @@ namespace wsrs
                         Dictionary<string, string> newVulnDic = new Dictionary<string, string>();
                         newVulnDic.Add(unit.sites[i].name, unit.sites[i].vulns[j].vulnUrl);
                         result.Add(unit.sites[i].vulns[j].name, newVulnDic);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        static Dictionary<string, Dictionary<string, string>> getVulnSiteAndVulnUrl2(Unit unit)
+        {
+            Dictionary<string, Dictionary<string, string>> result = new Dictionary<string, Dictionary<string, string>>();
+
+            for (int i = 0; i < unit.sites.Count; i++)
+            {
+                for (int j = 0; j < unit.sites[i].vulns.Count; j++)
+                {
+
+                    // contain vuln name
+                    if (result.ContainsKey(unit.sites[i].vulns[j].name))
+                    {
+                        // contain vuln name and contain site name
+                        if (result[unit.sites[i].vulns[j].name].ContainsKey(unit.sites[i].name))
+                        {
+                            // nothing to do
+                        }
+                        // contain vuln name but not contain site name
+                        else
+                        {
+                            // add if second scan not fix the vuln
+                            if (unit.sites[i].vulns[j].vulnUrl2 != "此弱點已不存在")
+                                result[unit.sites[i].vulns[j].name].Add(unit.sites[i].name, unit.sites[i].vulns[j].vulnUrl2);
+                        }
+                    }
+                    // not contain vuln name
+                    else
+                    {
+                        // add if second scan not fix the vuln
+                        if (unit.sites[i].vulns[j].vulnUrl2 != "此弱點已不存在")
+                        {
+                            Dictionary<string, string> newVulnDic = new Dictionary<string, string>();
+                            newVulnDic.Add(unit.sites[i].name, unit.sites[i].vulns[j].vulnUrl2);
+                            result.Add(unit.sites[i].vulns[j].name, newVulnDic);
+                        }
+                        
                     }
                 }
             }
