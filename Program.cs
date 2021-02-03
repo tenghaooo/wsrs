@@ -105,11 +105,17 @@ namespace wsrs
                             // open report template
                             if (!haveVuln)
                             {
-                                report = wordApp.Documents.Open(@"D:\TemplateFiles\no_vuln_sample.docx");
+                                if (caseinfo.reportCode[0] != 'E')
+                                    report = wordApp.Documents.Open(@"D:\TemplateFiles\no_vuln_sample.docx");
+                                else
+                                    report = wordApp.Documents.Open(@"D:\TemplateFiles\edc_no_vuln_sample.docx");
                             }
                             else
                             {
-                                report = wordApp.Documents.Open(@"D:\TemplateFiles\sample.docx");
+                                if (caseinfo.reportCode[0] != 'E')
+                                    report = wordApp.Documents.Open(@"D:\TemplateFiles\sample.docx");
+                                else
+                                    report = wordApp.Documents.Open(@"D:\TemplateFiles\edc_sample.docx");
                             }
 
                             if (haveVuln)
@@ -239,11 +245,17 @@ namespace wsrs
                             // open report template
                             if (!haveVuln)
                             {
-                                report = wordApp.Documents.Open(@"D:\TemplateFiles\no_vuln_sample2.docx");
+                                if (caseinfo.reportCode[0] != 'E')
+                                    report = wordApp.Documents.Open(@"D:\TemplateFiles\no_vuln_sample2.docx");
+                                else
+                                    report = wordApp.Documents.Open(@"D:\TemplateFiles\edc_no_vuln_sample2.docx");
                             }
                             else
                             {
-                                report = wordApp.Documents.Open(@"D:\TemplateFiles\sample2.docx");
+                                if (caseinfo.reportCode[0] != 'E')
+                                    report = wordApp.Documents.Open(@"D:\TemplateFiles\sample2.docx");
+                                else
+                                    report = wordApp.Documents.Open(@"D:\TemplateFiles\edc_sample2.docx");
                             }
 
                             if (haveVuln)
