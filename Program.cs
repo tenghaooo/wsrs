@@ -30,6 +30,7 @@ namespace wsrs
                 CaseInfo caseinfo = new CaseInfo();
 
                 string resultExcel = @"D:\TemplateFiles\sample.xlsx";
+                
 
                 Console.WriteLine("[L] Start running...");
 
@@ -122,7 +123,7 @@ namespace wsrs
                             {
                                 // write report create date
                                 Console.WriteLine("    [L] Writting create date");
-                                writeCreateDateToReport(ref report);
+                                writeCreateDateToReport(ref report, caseinfo);
 
                                 // write caseinfo to report and header
                                 Console.WriteLine("    [L] Writting caseinfo to report & header");
@@ -159,7 +160,7 @@ namespace wsrs
                             {
                                 // write report create date
                                 Console.WriteLine("    [L] Writting create date");
-                                writeCreateDateToReport(ref report);
+                                writeCreateDateToReport(ref report, caseinfo);
 
                                 // write caseinfo to report and header
                                 Console.WriteLine("    [L] Writting caseinfo to report & header");
@@ -262,7 +263,7 @@ namespace wsrs
                             {
                                 // write report create date
                                 Console.WriteLine("    [L] Writting create date");
-                                writeCreateDateToReport(ref report);
+                                writeCreateDateToReport(ref report, caseinfo);
 
                                 // write caseinfo to report and header
                                 Console.WriteLine("    [L] Writting caseinfo to report & header");
@@ -299,7 +300,7 @@ namespace wsrs
                             {
                                 // write report create date
                                 Console.WriteLine("    [L] Writting create date");
-                                writeCreateDateToReport(ref report);
+                                writeCreateDateToReport(ref report, caseinfo);
 
                                 // write caseinfo to report and header
                                 Console.WriteLine("    [L] Writting caseinfo to report & header");
@@ -1007,11 +1008,15 @@ namespace wsrs
             return vulnNum;
         }
 
-        static void writeCreateDateToReport(ref Word.Document report)
+        static void writeCreateDateToReport(ref Word.Document report, CaseInfo caseinfo)
         {
             String sDate = DateTime.Now.ToString();
             DateTime datevalue = (Convert.ToDateTime(sDate.ToString()));
             String yy = (datevalue.Year - 1911).ToString();
+            if (caseinfo.period[0] == '2')
+            {
+                yy = (datevalue.Year).ToString();
+            }
             String mn = datevalue.Month.ToString();
             String dy = datevalue.Day.ToString();
             report.Content.Find.Execute("p_rYear", false, false, false, false, false, true, 1, false, yy, 2, false, false, false, false);
@@ -1335,6 +1340,17 @@ namespace wsrs
             report.Content.Find.Execute("p_tool", false, false, false, false, false, true, 1, false, caseinfo.tool, 2, false, false, false, false);
             report.Content.Find.Execute("p_numOfSites", false, false, false, false, false, true, 1, false, getNumOfSitesOfSecondScan(unit).ToString(), 2, false, false, false, false);
 
+            string testTypeRemote = @"位於龍潭SOC之弱點檢測主機，對 貴單位測試標的發起遠端（Remote）";
+            string testTypeOnSite = @"工程師攜帶弱點檢測主機，對 貴單位測試標的發起到府（On-Site）";
+            string testTypeBoth = @"位於龍潭SOC之弱點檢測主機，對 貴單位測試標的發起遠端（Remote），以及工程師攜帶弱點檢測主機，對 貴單位測試標的發起到府（On-Site）";
+
+            if (caseinfo.testType == "o")
+                report.Content.Find.Execute("p_testType", false, false, false, false, false, true, 1, false, testTypeOnSite, 2, false, false, false, false);
+            else if (caseinfo.testType == "b")
+                report.Content.Find.Execute("p_testType", false, false, false, false, false, true, 1, false, testTypeBoth, 2, false, false, false, false);
+            else
+                report.Content.Find.Execute("p_testType", false, false, false, false, false, true, 1, false, testTypeRemote, 2, false, false, false, false);
+
             // write unit name
             if (unit.name != "000")
                 report.Content.Find.Execute("p_unitName", false, false, false, false, false, true, 1, false, "-" + unit.name, 2, false, false, false, false);
@@ -1437,6 +1453,17 @@ namespace wsrs
             report.Content.Find.Execute("p_endDate", false, false, false, false, false, true, 1, false, caseinfo.endDate, 2, false, false, false, false);
             report.Content.Find.Execute("p_tool", false, false, false, false, false, true, 1, false, caseinfo.tool, 2, false, false, false, false);
             report.Content.Find.Execute("p_numOfSites", false, false, false, false, false, true, 1, false, unit.sites.Count.ToString(), 2, false, false, false, false);
+
+            string testTypeRemote = @"位於龍潭SOC之弱點檢測主機，對 貴單位測試標的發起遠端（Remote）";
+            string testTypeOnSite = @"工程師攜帶弱點檢測主機，對 貴單位測試標的發起到府（On-Site）";
+            string testTypeBoth = @"位於龍潭SOC之弱點檢測主機，對 貴單位測試標的發起遠端（Remote），以及工程師攜帶弱點檢測主機，對 貴單位測試標的發起到府（On-Site）";
+
+            if (caseinfo.testType == "o")
+                report.Content.Find.Execute("p_testType", false, false, false, false, false, true, 1, false, testTypeOnSite, 2, false, false, false, false);
+            else if (caseinfo.testType == "b")
+                report.Content.Find.Execute("p_testType", false, false, false, false, false, true, 1, false, testTypeBoth, 2, false, false, false, false);
+            else
+                report.Content.Find.Execute("p_testType", false, false, false, false, false, true, 1, false, testTypeRemote, 2, false, false, false, false);
 
             // write unit name
             if (unit.name != "000")
@@ -1541,6 +1568,7 @@ namespace wsrs
             caseinfo.endDate = sheet.Cells[2, "J"].Value.ToString();
             caseinfo.level = sheet.Cells[2, "K"].Value.ToString();
             caseinfo.secondScan = sheet.Cells[2, "L"].Value.ToString();
+            caseinfo.testType = sheet.Cells[2, "M"].Value.ToString();
         }
 
         static void printBanner()

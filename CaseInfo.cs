@@ -20,10 +20,12 @@ namespace wsrs
         public string endDate { get; set; }
         public string level { get; set; }
         public string secondScan { get; set; }
+
+        public string testType { get; set; }
         public CaseInfo() { }
 
 
-        public CaseInfo(string userName, string projectName, string reportName, string period, string reportCode, string author, string tool, string year, string startDate, string endDate, string level, string secondScan)
+        public CaseInfo(string userName, string projectName, string reportName, string period, string reportCode, string author, string tool, string year, string startDate, string endDate, string level, string secondScan, string testType)
         {
             this.userName = userName;
             this.projectName = projectName;
@@ -37,6 +39,7 @@ namespace wsrs
             this.endDate = endDate;
             this.level = level;
             this.secondScan = secondScan;
+            this.testType = testType;
         }
     }
 }
